@@ -5,18 +5,14 @@ using Godot.NativeInterop;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
-using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Entities.Relics;
-using MegaCrit.Sts2.Core.Map;
+using MegaCrit.Sts2.Core.Exceptions;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen;
-using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.Saves;
@@ -67,6 +63,12 @@ public partial class MainFile : Node
                     _charactersById.Add(character.Id, character);
                 }
             }
+
+            if (_currentRun == null)
+            {
+                Logger.Error("_currentRun is null");
+                throw new SingletonInitException();
+            }
             List<MapPointHistoryEntry> lastAct = _currentRun.MapPointHistory.Last();
             MapPointHistoryEntry previousRoom = lastAct[lastAct.Count - 2];
             PlayerMapPointHistoryEntry playerStats = previousRoom.PlayerStats.First();
@@ -94,31 +96,19 @@ public partial class MainFile : Node
             serializableRun.SerializableRng.Seed = _currentRun.Seed;
             return serializableRun;
         }
-        
-        // private static async Task StartFloorReplayWithoutNeow(Player player, RunState runState, NGame game, ModelId actModelId, ModelId roomModelId)
-        // {
-        //     using (new NetLoadingHandle(RunManager.Instance.NetService))
-        //     {
-        //         await PreloadManager.LoadRunAssets(runState.Players.Select<Player, CharacterModel>((Func<Player, CharacterModel>) (p => p.Character)));
-        //         await PreloadManager.LoadActAssets(runState.Acts[0]);
-        //         RunManager.Instance.Launch();
-        //         game.RootSceneContainer.SetCurrentScene((Control) NRun.Create(runState));
-        //         // await RunManager.Instance.EnterAct(0, false);
-        //         CombatRoom combatRoom = new CombatRoom(ModelDb.GetById<EncounterModel>(roomModelId), runState);
-        //         // runState.Act = ??
-        //         await RunManager.Instance.LoadIntoLatestMapCoord(combatRoom);
-        //     }
-        // }
 
         private static async Task StartFloorReplay(Player player, RunState runState, NGame game, ModelId roomModelId)
         {
             using (new NetLoadingHandle(RunManager.Instance.NetService))
             {
+                Decimal hp = player.Creature.CurrentHp;
                 await PreloadManager.LoadRunAssets(runState.Players.Select<Player, CharacterModel>((Func<Player, CharacterModel>) (p => p.Character)));
                 await PreloadManager.LoadActAssets(runState.Acts[0]);
                 RunManager.Instance.Launch();
                 game.RootSceneContainer.SetCurrentScene((Control) NRun.Create(runState));
                 await RunManager.Instance.EnterAct(0, false);
+                // Reset health after Neow heals
+                player.Creature.SetCurrentHpInternal(hp);
                 new FightConsoleCmd().Process(player, [roomModelId.Entry]);
             }
         }
