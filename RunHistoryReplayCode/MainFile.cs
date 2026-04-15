@@ -1,7 +1,5 @@
 using System.Collections;
 using Godot;
-using Godot.Bridge;
-using Godot.NativeInterop;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
@@ -109,6 +107,7 @@ public partial class MainFile : Node
                 await RunManager.Instance.EnterAct(0, false);
                 // Reset health after Neow heals
                 player.Creature.SetCurrentHpInternal(hp);
+                game.AudioManager.StopMusic();
                 new FightConsoleCmd().Process(player, [roomModelId.Entry]);
             }
         }
