@@ -1,0 +1,11 @@
+{
+  "id": "RunHistoryReplay",
+  "name": "RunHistoryReplay",
+  "author": "WallyScreenshots",
+  "description": "Replay a point in your run history.",
+  "version": "v0.0.0",
+  "has_pck": true,
+  "has_dll": true,
+  "dependencies": [],
+  "affects_gameplay": false
+}
