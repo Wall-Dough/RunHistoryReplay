@@ -7,6 +7,8 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Exceptions;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens;
@@ -51,6 +53,24 @@ public partial class MainFile : Node
             }
         }
 
+        private static void AddOneHundredVajras(SerializablePlayer serializablePlayer)
+        {
+            string relicCategory = ModelDb.GetCategory(typeof(RelicModel));
+            for (int i = 0; i < 100; i++)
+            {
+                SerializableRelic serializableRelic = new SerializableRelic();
+                serializableRelic.Id = ModelDb.GetId<Vajra>();
+                serializablePlayer.Relics.Add(serializableRelic);
+            }
+        }
+
+        private static void AddDramaticEntrance(SerializablePlayer serializablePlayer)
+        {
+            SerializableCard serializableCard = new SerializableCard();
+            serializableCard.Id = ModelDb.GetId<DramaticEntrance>();
+            serializablePlayer.Deck.Add(serializableCard);
+        }
+
         private static Player CreatePlayer()
         {
             if (_charactersById == null)
@@ -78,6 +98,8 @@ public partial class MainFile : Node
             serializablePlayer.Deck = (List<SerializableCard>) runHistoryPlayer.Deck;
             serializablePlayer.CurrentHp = playerStats.CurrentHp;
             serializablePlayer.MaxHp = playerStats.MaxHp;
+            AddOneHundredVajras(serializablePlayer);
+            AddDramaticEntrance(serializablePlayer);
             player = Player.FromSerializable(serializablePlayer);
             return player;
         }
@@ -136,7 +158,7 @@ public partial class MainFile : Node
             {
                 Player player = CreatePlayer();
                 List<ActModel> actModels = GetActModels();
-                RunState runState = RunState.CreateForTest([player], actModels, null, GameMode.Standard, _currentRun.Ascension);
+                RunState runState = RunState.CreateForTest([player], actModels, null, GameMode.Standard, _currentRun.Ascension, _currentRun.Seed);
                 RunManager.Instance.SetUpNewSinglePlayer(runState, false);
                 int actIndex = _currentRun.MapPointHistory.Count - 1;
                 ModelId roomId = _currentRun.MapPointHistory.Last().Last().Rooms.Last().ModelId;
