@@ -82,6 +82,16 @@ public partial class MainFile : Node
             return player;
         }
 
+        private static List<ActModel> GetActModels()
+        {
+            List<ActModel> actModels = new List<ActModel>();
+            foreach (ModelId actId in _currentRun.Acts)
+            {
+                actModels.Add(ModelDb.GetById<ActModel>(actId));
+            }
+            return actModels;
+        }
+
         private static SerializableRun createSerializableRun()
         {
             SerializableRun serializableRun = new SerializableRun();
@@ -95,17 +105,17 @@ public partial class MainFile : Node
             return serializableRun;
         }
 
-        private static async Task StartFloorReplay(Player player, RunState runState, NGame game, ModelId roomModelId)
+        private static async Task StartFloorReplay(Player player, RunState runState, NGame game, ModelId roomModelId, int actIndex)
         {
             using (new NetLoadingHandle(RunManager.Instance.NetService))
             {
                 Decimal hp = player.Creature.CurrentHp;
                 await PreloadManager.LoadRunAssets(runState.Players.Select<Player, CharacterModel>((Func<Player, CharacterModel>) (p => p.Character)));
-                await PreloadManager.LoadActAssets(runState.Acts[0]);
+                await PreloadManager.LoadActAssets(runState.Acts[actIndex]);
                 RunManager.Instance.Launch();
                 game.RootSceneContainer.SetCurrentScene((Control) NRun.Create(runState));
-                await RunManager.Instance.EnterAct(0, false);
-                // Reset health after Neow heals
+                await RunManager.Instance.EnterAct(actIndex, false);
+                // Reset health after Ancient heals
                 player.Creature.SetCurrentHpInternal(hp);
                 game.AudioManager.StopMusic();
                 new FightConsoleCmd().Process(player, [roomModelId.Entry]);
@@ -125,10 +135,12 @@ public partial class MainFile : Node
             replayFloorButton.Pressed += () =>
             {
                 Player player = CreatePlayer();
-                RunState runState = RunState.CreateForTest([player], null, null, GameMode.Standard, _currentRun.Ascension);
+                List<ActModel> actModels = GetActModels();
+                RunState runState = RunState.CreateForTest([player], actModels, null, GameMode.Standard, _currentRun.Ascension);
                 RunManager.Instance.SetUpNewSinglePlayer(runState, false);
+                int actIndex = _currentRun.MapPointHistory.Count - 1;
                 ModelId roomId = _currentRun.MapPointHistory.Last().Last().Rooms.Last().ModelId;
-                StartFloorReplay(player, runState, game, roomId);
+                StartFloorReplay(player, runState, game, roomId, actIndex);
             };
             __instance.AddChild(replayFloorButton);
             NShareButton shareButton = __instance.GetNode<NShareButton>(new NodePath("ShareButton"));
