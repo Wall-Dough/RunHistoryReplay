@@ -2,17 +2,22 @@ using System.Collections;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.AutoSlay.Handlers.Rooms;
 using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Exceptions;
+using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Models.Events;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen;
+using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.Saves;
@@ -111,6 +116,9 @@ public partial class MainFile : Node
             {
                 actModels.Add(ModelDb.GetById<ActModel>(actId));
             }
+            // SerializableActModel serializableActModel = actModels.Last().ToSave();
+            // actModels.RemoveAt(actModels.Count - 1);
+            // actModels.Add(ActModel.FromSave(serializableActModel));
             return actModels;
         }
 
@@ -140,7 +148,12 @@ public partial class MainFile : Node
                 // Reset health after Ancient heals
                 player.Creature.SetCurrentHpInternal(hp);
                 game.AudioManager.StopMusic();
-                new FightConsoleCmd().Process(player, [roomModelId.Entry]);
+                if (NMapScreen.Instance != null && NMapScreen.Instance.IsOpen)
+                {
+                    NMapScreen.Instance.Close();
+                }
+                EncounterModel encounterModel = ModelDb.GetById<EncounterModel>(roomModelId).ToMutable();
+                await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounterModel);
             }
         }
         
