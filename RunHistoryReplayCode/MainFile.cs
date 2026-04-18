@@ -2,6 +2,7 @@ using System.Collections;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Exceptions;
 using MegaCrit.Sts2.Core.Modding;
@@ -43,9 +44,11 @@ public partial class MainFile : Node
     [HarmonyPatch]
     public static class RunHistoryReplayPatch
     {
+        private static bool _useDefaultNodeStuff = true;
         private static RunHistory? _currentRun;
         private static Hashtable? _charactersById = null;
         private static RunHistoryPlayer? _currentPlayer;
+        private static Control? _myEventNode;
         
 
         private static void LogAllChildren(Node parent)
@@ -170,9 +173,15 @@ public partial class MainFile : Node
                 {
                     NMapScreen.Instance.Close();
                 }
-                
                 EncounterModel encounterModel = ModelDb.GetById<EncounterModel>(roomModelId).ToMutable();
-                await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounterModel);
+                CombatRoom room = new CombatRoom(new CombatState(encounterModel, runState, runState.Modifiers, runState.MultiplayerScalingModel))
+                {
+                    ShouldCreateCombat = true,
+                    ShouldResumeParentEventAfterCombat = true,
+                    ParentEventId = architectEventModel.Id
+                };
+                _myEventNode = null;
+                await RunManager.Instance.EnterRoomWithoutExitingCurrentRoom(room, true);
             }
         }
         
@@ -188,6 +197,7 @@ public partial class MainFile : Node
             replayFloorButton.SetText("Replay Floor");
             replayFloorButton.Pressed += () =>
             {
+                _useDefaultNodeStuff = false;
                 Player player = CreatePlayer();
                 List<ActModel> actModels = GetActModels();
                 RunState runState = RunState.CreateForTest([player], actModels, null, GameMode.Standard, _currentRun.Ascension, _currentRun.Seed);
@@ -216,6 +226,32 @@ public partial class MainFile : Node
         private static void BeforeSelectPlayer(NRunHistoryPlayerIcon __instance)
         {
             _currentPlayer = __instance.Player;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(EventModel))]
+        [HarmonyPatch("Node", MethodType.Getter)]
+        private static bool BeforeNodeGet(ref Control? __result)
+        {
+            __result = _myEventNode;
+            return _useDefaultNodeStuff;
+        }
+        
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(EventModel))]
+        [HarmonyPatch("Node", MethodType.Setter)]
+        private static bool BeforeNodeSet(Control? node)
+        {
+            _myEventNode = node;
+            return _useDefaultNodeStuff;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(AncientEventModel))]
+        [HarmonyPatch("Done")]
+        private static void AfterDone()
+        {
+            _useDefaultNodeStuff = true;
         }
     }
 }
