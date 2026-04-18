@@ -143,6 +143,10 @@ public partial class MainFile : Node
                 RunManager.Instance.Launch();
                 game.RootSceneContainer.SetCurrentScene((Control) NRun.Create(runState));
                 await RunManager.Instance.EnterAct(actIndex, false);
+
+                EventModel architectEventModel = ModelDb.Event<TheArchitect>();
+                await RunManager.Instance.EnterRoomDebug(RoomType.Event, model: architectEventModel);
+                
                 // Reset health after Ancient heals
                 player.Creature.SetCurrentHpInternal(hp);
                 game.AudioManager.StopMusic();
@@ -150,9 +154,6 @@ public partial class MainFile : Node
                 {
                     NMapScreen.Instance.Close();
                 }
-
-                EventModel architectEventModel = ModelDb.Event<TheArchitect>();
-                await RunManager.Instance.EnterRoomDebug(RoomType.Event, model: architectEventModel);
                 
                 EncounterModel encounterModel = ModelDb.GetById<EncounterModel>(roomModelId).ToMutable();
                 await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounterModel);
