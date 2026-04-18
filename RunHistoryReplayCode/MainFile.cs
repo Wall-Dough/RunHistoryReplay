@@ -14,6 +14,7 @@ using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen;
 using MegaCrit.Sts2.Core.Rooms;
@@ -231,27 +232,29 @@ public partial class MainFile : Node
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EventModel))]
         [HarmonyPatch("Node", MethodType.Getter)]
-        private static bool BeforeNodeGet(ref Control? __result)
+        private static bool BeforeNodeGet(EventModel __instance, ref Control? __result)
         {
-            __result = _myEventNode;
-            return _useDefaultNodeStuff;
+            if (__instance.Id.Entry == ModelDb.Event<TheArchitect>().Id.Entry)
+            {
+                __result = _myEventNode;
+                return false;
+            }
+            _myEventNode = null;
+            return true;
         }
         
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EventModel))]
         [HarmonyPatch("Node", MethodType.Setter)]
-        private static bool BeforeNodeSet(Control? node)
+        private static bool BeforeNodeSet(Control? node, EventModel __instance)
         {
-            _myEventNode = node;
-            return _useDefaultNodeStuff;
-        }
-
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(AncientEventModel))]
-        [HarmonyPatch("Done")]
-        private static void AfterDone()
-        {
-            _useDefaultNodeStuff = true;
+            if (__instance.Id.Entry == ModelDb.Event<TheArchitect>().Id.Entry)
+            {
+                _myEventNode = node;
+                return false;
+            }
+            _myEventNode = null;
+            return true;
         }
     }
 }
