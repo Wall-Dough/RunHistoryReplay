@@ -12,11 +12,13 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Events;
 using MegaCrit.Sts2.Core.Models.Relics;
+using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen;
+using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
@@ -112,9 +114,9 @@ public partial class MainFile : Node
         private static List<ActModel> GetActModels()
         {
             List<ActModel> actModels = new List<ActModel>();
-            foreach (ModelId actId in _currentRun.Acts)
+            for (int i = 0; i < _currentRun.MapPointHistory.Count; i++)
             {
-                actModels.Add(ModelDb.GetById<ActModel>(actId));
+                actModels.Add(ModelDb.GetById<ActModel>(_currentRun.Acts[i]));
             }
             // SerializableActModel serializableActModel = actModels.Last().ToSave();
             // actModels.RemoveAt(actModels.Count - 1);
@@ -172,7 +174,8 @@ public partial class MainFile : Node
                 Player player = CreatePlayer();
                 List<ActModel> actModels = GetActModels();
                 RunState runState = RunState.CreateForTest([player], actModels, null, GameMode.Standard, _currentRun.Ascension, _currentRun.Seed);
-                RunManager.Instance.SetUpNewSinglePlayer(runState, false);
+                RunManager.Instance.SetUpTest(runState, new NetSingleplayerGameService());
+                RunManager.Instance.GenerateRooms();
                 int actIndex = _currentRun.MapPointHistory.Count - 1;
                 ModelId roomId = _currentRun.MapPointHistory.Last().Last().Rooms.Last().ModelId;
                 StartFloorReplay(player, runState, game, roomId, actIndex);
