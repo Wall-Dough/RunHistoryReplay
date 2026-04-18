@@ -191,6 +191,10 @@ public partial class MainFile : Node
         [HarmonyPatch("_Ready")]
         private static void AfterReady(NRunHistory __instance)
         {
+            if (RunManager.Instance.IsInProgress)
+            {
+                return;
+            }
             Logger.Info("Run history opened");
             NGame game = (NGame) __instance.GetTree().CurrentScene;
             LogAllChildren(__instance.GetTree().CurrentScene);
