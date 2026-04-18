@@ -2,11 +2,8 @@ using System.Collections;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
-using MegaCrit.Sts2.Core.AutoSlay.Handlers.Rooms;
-using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Exceptions;
-using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
@@ -18,7 +15,6 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen;
-using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
@@ -154,6 +150,10 @@ public partial class MainFile : Node
                 {
                     NMapScreen.Instance.Close();
                 }
+
+                EventModel architectEventModel = ModelDb.Event<TheArchitect>();
+                await RunManager.Instance.EnterRoomDebug(RoomType.Event, model: architectEventModel);
+                
                 EncounterModel encounterModel = ModelDb.GetById<EncounterModel>(roomModelId).ToMutable();
                 await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounterModel);
             }
