@@ -45,6 +45,7 @@ public partial class MainFile : Node
     {
         private static RunHistory? _currentRun;
         private static Hashtable? _charactersById = null;
+        private static RunHistoryPlayer? _currentPlayer;
         
 
         private static void LogAllChildren(Node parent)
@@ -92,15 +93,30 @@ public partial class MainFile : Node
             }
             List<MapPointHistoryEntry> lastAct = _currentRun.MapPointHistory.Last();
             MapPointHistoryEntry previousRoom = lastAct[lastAct.Count - 2];
-            PlayerMapPointHistoryEntry playerStats = previousRoom.PlayerStats.First();
-            RunHistoryPlayer runHistoryPlayer = _currentRun.Players.First();
+            RunHistoryPlayer runHistoryPlayer = _currentPlayer;
+            PlayerMapPointHistoryEntry? thePlayerStats = null;
+            foreach (PlayerMapPointHistoryEntry playerStats in previousRoom.PlayerStats)
+            {
+                if (playerStats.PlayerId == runHistoryPlayer.Id)
+                {
+                    thePlayerStats = playerStats;
+                    break;
+                }
+            }
+
+            if (thePlayerStats == null)
+            {
+                Logger.Warn("Unable to match PlayerMapPointHistoryEntry with RunHistoryPlayer. Defaulting to first available player.");
+                thePlayerStats = previousRoom.PlayerStats.First();
+                runHistoryPlayer = _currentRun.Players.First();
+            }
             CharacterModel runHistoryCharacter = (CharacterModel) _charactersById[runHistoryPlayer.Character];
             Player player = Player.CreateForNewRun(runHistoryCharacter, UnlockState.all, 1UL);
             SerializablePlayer serializablePlayer = player.ToSerializable();
             serializablePlayer.Relics = (List<SerializableRelic>) runHistoryPlayer.Relics;
             serializablePlayer.Deck = (List<SerializableCard>) runHistoryPlayer.Deck;
-            serializablePlayer.CurrentHp = playerStats.CurrentHp;
-            serializablePlayer.MaxHp = playerStats.MaxHp;
+            serializablePlayer.CurrentHp = thePlayerStats.CurrentHp;
+            serializablePlayer.MaxHp = thePlayerStats.MaxHp;
             AddOneHundredVajras(serializablePlayer);
             AddDramaticEntrance(serializablePlayer);
             player = Player.FromSerializable(serializablePlayer);
@@ -192,6 +208,14 @@ public partial class MainFile : Node
         private static void BeforeDisplayRun(RunHistory history)
         {
             _currentRun = history;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(NRunHistoryPlayerIcon))]
+        [HarmonyPatch("Select")]
+        private static void BeforeSelectPlayer(NRunHistoryPlayerIcon __instance)
+        {
+            _currentPlayer = __instance.Player;
         }
     }
 }
